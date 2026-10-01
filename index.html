@@ -165,8 +165,17 @@
           </select>
         </label>
         <label>JPEG Quality
-          <input id="outputQualityInput" type="range" min="50" max="100" value="92" />
+          <input id="outputQualityInput" type="range" min="50" max="100" value="82" />
           <span id="outputQualityValue" class="muted"></span>
+        </label>
+        <label>Max Dimension (longest side)
+          <select id="maxDimensionSelect">
+            <option value="0">No resize (original size)</option>
+            <option value="3000">3000px</option>
+            <option value="2048" selected>2048px (recommended)</option>
+            <option value="1600">1600px</option>
+            <option value="1200">1200px</option>
+          </select>
         </label>
       </fieldset>
     </div>

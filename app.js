@@ -29,7 +29,8 @@ const defaultSettings = {
   textColor: "#ffffff",
   textMarginPx: 40,
   outputFormat: "image/jpeg",
-  outputQuality: 92,
+  outputQuality: 82,
+  maxDimension: 2048,
 };
 
 let settings = loadSettings();
@@ -253,12 +254,25 @@ async function getLogoImageElement() {
   return defaultLogoImage;
 }
 
+function scaledDimensions(width, height, maxDimension) {
+  if (!maxDimension || Math.max(width, height) <= maxDimension) {
+    return { width, height };
+  }
+  const scale = maxDimension / Math.max(width, height);
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
 async function renderWatermarkedCanvas(sourceImg) {
+  const { width, height } = scaledDimensions(
+    sourceImg.naturalWidth,
+    sourceImg.naturalHeight,
+    settings.maxDimension
+  );
   const canvas = document.createElement("canvas");
-  canvas.width = sourceImg.naturalWidth;
-  canvas.height = sourceImg.naturalHeight;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(sourceImg, 0, 0);
+  ctx.drawImage(sourceImg, 0, 0, width, height);
 
   if (settings.logoEnabled) {
     try {
@@ -385,7 +399,8 @@ async function uploadAll() {
         const filename = `${baseName}-watermarked.${ext}`;
         const result = await uploadFileToDrive(blob, filename, folderId);
         photo.status = "done";
-        log(`Uploaded "${result.name}"`, "success");
+        const sizeKb = Math.round(blob.size / 1024);
+        log(`Uploaded "${result.name}" (${sizeKb} KB)`, "success");
       } catch (err) {
         photo.status = "error";
         log(`Failed to upload "${photo.file.name}": ${err.message}`, "error");
@@ -419,6 +434,7 @@ function populateSettingsForm() {
   el("textMarginInput").value = settings.textMarginPx;
   el("outputFormatSelect").value = settings.outputFormat;
   el("outputQualityInput").value = settings.outputQuality;
+  el("maxDimensionSelect").value = String(settings.maxDimension);
   toggleFolderRows();
   updateRangeLabels();
   el("folderStatus").textContent = settings.ownedFolderId
@@ -459,6 +475,7 @@ function readSettingsFromForm() {
   settings.textMarginPx = Number(el("textMarginInput").value);
   settings.outputFormat = el("outputFormatSelect").value;
   settings.outputQuality = Number(el("outputQualityInput").value);
+  settings.maxDimension = Number(el("maxDimensionSelect").value);
 }
 
 function openSettings() {
