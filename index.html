@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Calhoun Watermark &amp; Upload</title>
+
+<!-- iOS "Add to Home Screen" behavior -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Watermark" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#111111" />
+
+<link rel="stylesheet" href="styles.css" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Calhoun Performance Photography</h1>
+  <div class="topbar-actions">
+    <span id="authStatus" class="status-pill status-signed-out">Signed out</span>
+    <button id="signInBtn" class="btn btn-primary">Sign in with Google</button>
+    <button id="settingsBtn" class="btn btn-ghost" aria-label="Settings">⚙ Settings</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-row">
+      <label for="photoInput" class="btn btn-primary btn-large">Choose Photos</label>
+      <input id="photoInput" type="file" accept="image/*" multiple hidden />
+      <button id="uploadAllBtn" class="btn btn-accent btn-large" disabled>Watermark &amp; Upload All</button>
+      <button id="clearBtn" class="btn btn-ghost" disabled>Clear</button>
+    </div>
+    <p id="folderHint" class="hint"></p>
+  </section>
+
+  <section class="panel preview-panel">
+    <h2>Preview</h2>
+    <canvas id="previewCanvas"></canvas>
+    <p class="hint">Preview shows your watermark settings applied to the first photo you choose.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Photos <span id="photoCount" class="muted"></span></h2>
+    <div id="photoGrid" class="photo-grid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Activity Log</h2>
+    <ul id="logList" class="log-list"></ul>
+  </section>
+</main>
+
+<!-- Settings modal -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Settings</h2>
+      <button id="closeSettingsBtn" class="btn btn-ghost" aria-label="Close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <fieldset>
+        <legend>Google Account</legend>
+        <label>OAuth Client ID
+          <input id="clientIdInput" type="text" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Destination Folder</legend>
+        <label class="checkbox-row">
+          <input id="useExistingFolderChk" type="checkbox" />
+          Use an existing Drive folder (requires full Drive access)
+        </label>
+        <div id="existingFolderRow" class="hidden">
+          <label>Existing Folder ID or Link
+            <input id="existingFolderInput" type="text" placeholder="Paste folder link or ID" />
+          </label>
+        </div>
+        <div id="ownedFolderRow">
+          <label>App Folder Name
+            <input id="ownedFolderNameInput" type="text" value="Watermarked Photos" />
+          </label>
+          <button id="createFolderBtn" class="btn btn-secondary">Create / Use Folder</button>
+          <p id="folderStatus" class="hint"></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Logo Watermark</legend>
+        <label class="checkbox-row">
+          <input id="logoEnabledChk" type="checkbox" checked />
+          Enable logo watermark
+        </label>
+        <label>Replace Logo Image
+          <input id="logoFileInput" type="file" accept="image/*" />
+        </label>
+        <label>Position
+          <select id="logoPositionSelect">
+            <option value="top-left">Top Left</option>
+            <option value="top-right">Top Right</option>
+            <option value="bottom-left">Bottom Left</option>
+            <option value="bottom-right" selected>Bottom Right</option>
+            <option value="center">Center</option>
+          </select>
+        </label>
+        <label>Size (% of photo width)
+          <input id="logoScaleInput" type="range" min="5" max="60" value="20" />
+          <span id="logoScaleValue" class="muted"></span>
+        </label>
+        <label>Opacity
+          <input id="logoOpacityInput" type="range" min="10" max="100" value="85" />
+          <span id="logoOpacityValue" class="muted"></span>
+        </label>
+        <label>Margin (px)
+          <input id="logoMarginInput" type="number" min="0" max="400" value="40" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Text Watermark</legend>
+        <label class="checkbox-row">
+          <input id="textEnabledChk" type="checkbox" />
+          Enable text watermark
+        </label>
+        <label>Text
+          <input id="textContentInput" type="text" value="© Calhoun Performance Photography" />
+        </label>
+        <label>Position
+          <select id="textPositionSelect">
+            <option value="top-left">Top Left</option>
+            <option value="top-right">Top Right</option>
+            <option value="bottom-left" selected>Bottom Left</option>
+            <option value="bottom-right">Bottom Right</option>
+            <option value="center">Center</option>
+          </select>
+        </label>
+        <label>Size (% of photo width)
+          <input id="textScaleInput" type="range" min="1" max="10" value="3" />
+          <span id="textScaleValue" class="muted"></span>
+        </label>
+        <label>Opacity
+          <input id="textOpacityInput" type="range" min="10" max="100" value="80" />
+          <span id="textOpacityValue" class="muted"></span>
+        </label>
+        <label>Color
+          <input id="textColorInput" type="color" value="#ffffff" />
+        </label>
+        <label>Margin (px)
+          <input id="textMarginInput" type="number" min="0" max="400" value="40" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Output</legend>
+        <label>Format
+          <select id="outputFormatSelect">
+            <option value="image/jpeg" selected>JPEG</option>
+            <option value="image/png">PNG</option>
+          </select>
+        </label>
+        <label>JPEG Quality
+          <input id="outputQualityInput" type="range" min="50" max="100" value="92" />
+          <span id="outputQualityValue" class="muted"></span>
+        </label>
+      </fieldset>
+    </div>
+
+    <div class="modal-footer">
+      <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
